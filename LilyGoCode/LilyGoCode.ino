@@ -15,7 +15,7 @@
 // set GSM PIN, if any
 #define GSM_PIN ""
  float lat,  lon;
-
+float lat1=260, lon1=260;
 // Your GPRS credentials, if any
 const char apn[]  = "YOUR-APN";     //SET TO YOUR APN
 const char gprsUser[] = "";
@@ -136,16 +136,17 @@ void loop()
   
     
        getlocation();
+      delay(1000);
        sendlocation();    
 
-    while (1) {
+   /* while (1) {
         while (SerialAT.available()) {
             SerialMon.write(SerialAT.read());
         }
         while (SerialMon.available()) {
             SerialAT.write(SerialMon.read());
         }
-    }
+    }*/
 }
 void getlocation()
 {
@@ -183,42 +184,48 @@ void getlocation()
 void sendlocation()
 {
     //SerialAT.println("ATE0");
-
+//lat1=lat1+20;
+//lon1=lon1+20;
   SerialAT.println("ATE1");
+  delay(1000);
  SerialAT.println("AT+CPIN?");    //Sets the GSM Module in Text Mode
 
-  delay(500);  // Delay of 1000 milli seconds or 1 second
+  delay(1000);  // Delay of 1000 milli seconds or 1 second
 
   SerialAT.println("AT+CFUN=1"); // Replace x with mobile number
-  delay(500);
-  SerialAT.println("AT+CSQ"); 
-  delay(500); 
-  SerialAT.println("AT+COPS?"); 
-  delay(500); 
-  SerialAT.println("AT+CPSI?"); 
-  delay(500); 
-  SerialAT.println("AT+CGATT=1"); 
-  delay(500);
-  SerialAT.println("AT+CIPSHUT"); 
-  delay(500); 
-  SerialAT.println("AT+CIPMUX=0"); 
-  delay(500); 
-  SerialAT.println("AT+CSTT=\"internet\""); 
-  delay(500); 
-  SerialAT.println("AT+CIICR"); 
   delay(1000);
-  SerialAT.println("AT+CIFSR"); 
+  SerialAT.println("AT+CSQ"); 
   delay(1000); 
+  SerialAT.println("AT+COPS?"); 
+  delay(1000); 
+  SerialAT.println("AT+CPSI?"); 
+  delay(1000); 
+  SerialAT.println("AT+CGATT=1"); 
+  delay(1000);
+  SerialAT.println("AT+CIPSHUT"); 
+  delay(1000); 
+  SerialAT.println("AT+CIPMUX=0"); 
+  delay(2000); 
+  SerialAT.println("AT+CSTT=\"internet\""); 
+  delay(5000); 
+  SerialAT.println("AT+CIICR"); 
+  delay(5000);
+  SerialAT.println("AT+CIFSR"); 
+  delay(5000); 
   Serial.println("sending");
   SerialAT.println("AT+CIPSTART=\"TCP\",\"api.thingspeak.com\",\"80\""); 
   delay(5000); 
   SerialAT.println("AT+CIPSEND"); 
-  delay(500); 
+  delay(5000); 
   SerialAT.print("GET https://api.thingspeak.com/update?api_key=DWA2S9BE15RCA43E&field1=");
-  SerialAT.print(lat);
+  SerialAT.print(lat1);
   SerialAT.print("&field2=");
-  SerialAT.println(lon);
+  SerialAT.println(lon1);
+  //  delay(5000); 
+  SerialAT.print("\r\n");
+  delay(5000); 
   SerialAT.println((char)26);
+  delay(5000); 
   SerialAT.println("AT+CIPCLOSE");
   delay(5000);
   Serial.println("done!");
