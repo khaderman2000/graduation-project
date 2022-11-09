@@ -14,10 +14,10 @@
 
 // set GSM PIN, if any
 #define GSM_PIN ""
- float lat,  lon;
-float lat1=260, lon1=260;
+float lat, lon,exlat,exlon;
+float lat1 = 260, lon1 = 260;
 // Your GPRS credentials, if any
-const char apn[]  = "YOUR-APN";     //SET TO YOUR APN
+const char apn[] = "YOUR-APN";     //SET TO YOUR APN
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
@@ -31,7 +31,9 @@ const char gprsPass[] = "";
 StreamDebugger debugger(SerialAT, SerialMon);
 TinyGsm modem(debugger);
 #else
+
 TinyGsm modem(SerialAT);
+
 #endif
 
 #define uS_TO_S_FACTOR      1000000ULL  // Conversion factor for micro seconds to seconds
@@ -50,8 +52,7 @@ TinyGsm modem(SerialAT);
 #define LED_PIN             12
 
 
-void enableGPS(void)
-{
+void enableGPS(void) {
     // Set SIM7000G GPIO4 LOW ,turn on GPS power
     // CMD:AT+SGPIO=0,4,1,1
     // Only in version 20200415 is there a function to control GPS power
@@ -64,8 +65,7 @@ void enableGPS(void)
 
 }
 
-void disableGPS(void)
-{
+void disableGPS(void) {
     // Set SIM7000G GPIO4 LOW ,turn off GPS power
     // CMD:AT+SGPIO=0,4,1,0
     // Only in version 20200415 is there a function to control GPS power
@@ -76,16 +76,14 @@ void disableGPS(void)
     modem.disableGPS();
 }
 
-void modemPowerOn()
-{
+void modemPowerOn() {
     pinMode(PWR_PIN, OUTPUT);
     digitalWrite(PWR_PIN, LOW);
     delay(1000);    //Datasheet Ton mintues = 1S
     digitalWrite(PWR_PIN, HIGH);
 }
 
-void modemPowerOff()
-{
+void modemPowerOff() {
     pinMode(PWR_PIN, OUTPUT);
     digitalWrite(PWR_PIN, LOW);
     delay(1500);    //Datasheet Ton mintues = 1.2S
@@ -93,15 +91,13 @@ void modemPowerOff()
 }
 
 
-void modemRestart()
-{
+void modemRestart() {
     modemPowerOff();
     delay(1000);
     modemPowerOn();
 }
 
-void setup()
-{
+void setup() {
     // Set console baud rate
     SerialMon.begin(115200);
 
@@ -120,26 +116,34 @@ void setup()
     Serial.println("antenna has been connected to the GPS port on the board.");
     Serial.println("/**********************************************************/\n\n");
 
- delay(1000);
-    
+    delay(1000);
+
 
     Serial.println("/**********************************************************/");
     Serial.println("After the network test is complete, please enter the  ");
     Serial.println("AT command in the serial terminal.");
     Serial.println("/**********************************************************/\n\n");
-  
-  
+
+
 }
 
-void loop()
-{
-  
-    
-       getlocation();
-      delay(1000);
-       sendlocation();    
+void loop() {
 
-   /* while (1) {
+
+    getlocation();
+    // delay(1000);
+    if(lat!=exlat||lon!=exlon){
+          sendlocation();
+          exlat=lat;
+          exlon=lon;
+    }
+    else 
+    {
+      Serial.println("same coordinates!");
+     delay(1000);
+    }
+
+    /*while (1) {
         while (SerialAT.available()) {
             SerialMon.write(SerialAT.read());
         }
@@ -148,8 +152,9 @@ void loop()
         }
     }*/
 }
-void getlocation()
-{
+
+void getlocation() {
+
     if (!modem.testAT()) {
         Serial.println("Failed to restart modem, attempting to continue without restarting");
         modemRestart();
@@ -160,73 +165,58 @@ void getlocation()
     Serial.println("The blue indicator light flashes to indicate positioning.");
 
     enableGPS();
-
     while (1) {
         if (modem.getGPS(&lat, &lon)) {
             Serial.println("The location has been locked, the latitude and longitude are:");
-            Serial.print("latitude:"); Serial.println(lat);
-            Serial.print("longitude:"); Serial.println(lon);
-            
+            Serial.print("latitude:");
+            Serial.println(String(lat, 8));
+            Serial.print("longitude:");
+            Serial.println(String(lon, 8));
 
-  delay(1000);  // Delay of 1000 milli seconds or 1 second
-
-
-
-  delay(3000);
             break;
         }
         digitalWrite(LED_PIN, !digitalRead(LED_PIN));
-        delay(2000);
+        delay(500);
     }
 
-    disableGPS();
+    //disableGPS();
 }
-void sendlocation()
-{
-    //SerialAT.println("ATE0");
-//lat1=lat1+20;
-//lon1=lon1+20;
-  SerialAT.println("ATE1");
-  delay(1000);
- SerialAT.println("AT+CPIN?");    //Sets the GSM Module in Text Mode
 
-  delay(1000);  // Delay of 1000 milli seconds or 1 second
+void sendlocation() {
 
-  SerialAT.println("AT+CFUN=1"); // Replace x with mobile number
-  delay(1000);
-  SerialAT.println("AT+CSQ"); 
-  delay(1000); 
-  SerialAT.println("AT+COPS?"); 
-  delay(1000); 
-  SerialAT.println("AT+CPSI?"); 
-  delay(1000); 
-  SerialAT.println("AT+CGATT=1"); 
-  delay(1000);
-  SerialAT.println("AT+CIPSHUT"); 
-  delay(1000); 
-  SerialAT.println("AT+CIPMUX=0"); 
-  delay(2000); 
-  SerialAT.println("AT+CSTT=\"internet\""); 
-  delay(5000); 
-  SerialAT.println("AT+CIICR"); 
-  delay(5000);
-  SerialAT.println("AT+CIFSR"); 
-  delay(5000); 
-  Serial.println("sending");
-  SerialAT.println("AT+CIPSTART=\"TCP\",\"api.thingspeak.com\",\"80\""); 
-  delay(5000); 
-  SerialAT.println("AT+CIPSEND"); 
-  delay(5000); 
-  SerialAT.print("GET https://api.thingspeak.com/update?api_key=DWA2S9BE15RCA43E&field1=");
-  SerialAT.print(lat1);
-  SerialAT.print("&field2=");
-  SerialAT.println(lon1);
-  //  delay(5000); 
-  SerialAT.print("\r\n");
-  delay(5000); 
-  SerialAT.println((char)26);
-  delay(5000); 
-  SerialAT.println("AT+CIPCLOSE");
-  delay(5000);
-  Serial.println("done!");
-  }
+
+
+    // SerialAT.println("ATE1");
+    //SerialAT.println("AT+CPIN?");    delay(500);  
+
+    SerialAT.println("AT+CFUN=1");
+    delay(500);
+    // SerialAT.println("AT+CSQ");     delay(500); 
+    // SerialAT.println("AT+COPS?"); delay(500); 
+    // SerialAT.println("AT+CPSI?"); delay(500); 
+    SerialAT.println("AT+CGATT=1");
+    delay(1000);
+    SerialAT.println("AT+CIPSHUT");
+    delay(1000);
+    SerialAT.println("AT+CIPMUX=0");
+    delay(1000);
+    SerialAT.println("AT+CSTT=\"internet\"");
+    delay(2500);
+    SerialAT.println("AT+CIICR");
+    delay(2500);
+    SerialAT.println("AT+CIFSR");
+    delay(1000);
+
+    SerialAT.println("AT+CIPSTART=\"TCP\",\"api.thingspeak.com\",\"80\"");
+    delay(3000);
+    SerialAT.println("AT+CIPSEND");
+    delay(500);
+    SerialAT.print("GET https://api.thingspeak.com/update?api_key=DWA2S9BE15RCA43E&field1=");
+    SerialAT.print(String(lat, 8));
+    SerialAT.print("&field2=");
+    SerialAT.println(String(lon, 8));
+    SerialAT.println((char) 26);
+    delay(500);
+    SerialAT.println("AT+CIPCLOSE");
+    Serial.println("sent!");
+}
